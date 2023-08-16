@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Check if branch name parameter is provided
+if [ -z "$1" ]; then
+    echo "Usage: $0 <branch_name>"
+    exit 1
+fi
+
+# Assign the branch name from the parameter
+target_branch="$1"
+
+# Array to store project names with the branch
+projects_with_branch=()
+
+# Loop through subdirectories in the current folder
+for project_dir in */; do
+    if [ -d "$project_dir/.git" ]; then
+        # Change directory to the project
+        cd "$project_dir"
+        
+        # Perform a git pull to update the project
+        git pull &>/dev/null
+        
+        # Check if the target branch exists
+        git rev-parse --verify "$target_branch" >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            projects_with_branch+=("$project_dir")
+        fi
+        
+        # Change back to the original directory
+        cd ..
+    fi
+done
+
+# Print projects with the specified branch
+if [ ${#projects_with_branch[@]} -gt 0 ]; then
+    echo "Projects with branch '$target_branch':"
+    for project in "${projects_with_branch[@]}"; do
+        echo "$project"
+    done
+else
+    echo "No projects found with branch '$target_branch'"
+fi
+

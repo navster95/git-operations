@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Get the current directory
+current_directory=$(pwd)
+
+# Check if the branch name argument is provided
+if [ $# -ne 1 ]; then
+  echo "Error: Please provide the branch name as an argument."
+  echo "Usage: $0 <branch_name>"
+  exit 1
+fi
+
+# Assign the first argument to the branch_name variable
+branch_name="$1"
+
+# Set the log file path
+log_file="$current_directory/checkout_errors.log"
+
+# Clear the log file
+> "$log_file"
+
+# Loop over subdirectories in the current directory
+for folder in "$current_directory"/*; do
+  if [ -d "$folder" ]; then
+    echo "Processing folder: $folder"
+
+    # Change directory to the folder
+    cd "$folder" || { echo "Error: Could not change to directory '$folder'"; continue; }
+
+    # Perform git pull to update the repository
+    if ! git pull origin "$branch_name" 2>> "$log_file"; then
+      echo "Error: Could not pull from '$branch_name' branch in '$folder'" >> "$log_file"
+      cd "$current_directory"  # Change back to the parent directory for the next iteration
+      continue  # Continue with the next iteration of the loop
+    fi
+
+    # Perform git checkout for the specified branch and log errors
+    if ! git checkout "$branch_name" 2>> "$log_file"; then
+      echo "Error: Could not checkout branch '$branch_name' in '$folder'" >> "$log_file"
+    fi
+
+    # Change back to the parent directory for the next iteration
+    cd "$current_directory"
+  fi
+done
+
+echo "Git pull and checkout completed for all subdirectories in the current directory."
+
